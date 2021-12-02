@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Bitcoin Wallet</string>
+
+    <string name="left_arrow">⬅</string>
+    <string name="copy_icon">📋</string>
+    <string name="camera_icon">📷</string>
+    <string name="lock_icon">🔐</string>
+    <string name="shield_icon">🛡️</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+</resources>
