@@ -5,6 +5,7 @@ import android.os.Bundle;
 
 import androidx.annotation.RequiresApi;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -23,6 +24,7 @@ public class MainWalletPageFragrament extends Fragment {
     private View MainView;
 
     private Thread UpdateBalanceTransactionsThread;
+    private FragmentManager MainFragmentManager;
 
     public MainWalletPageFragrament() {
     }
@@ -34,8 +36,6 @@ public class MainWalletPageFragrament extends Fragment {
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     private void updateTransactions(){
-        SingletonWallet.getApp().getUserWalletBtcNetworkConnection().updateTransactions();
-
     }
 
     private void initializeFragmentCoreProcessing(){

@@ -4,15 +4,26 @@ import android.os.Build;
 
 import androidx.annotation.RequiresApi;
 
+import com.example.chardsoftcryptowallet.core.cryptography.BytesOperator;
+import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.SettableFuture;
+import com.google.errorprone.annotations.Immutable;
+
 import org.bitcoinj.core.Address;
 import org.bitcoinj.core.Coin;
 import org.bitcoinj.core.Context;
 import org.bitcoinj.core.InsufficientMoneyException;
 import org.bitcoinj.core.NetworkParameters;
+import org.bitcoinj.core.PeerGroup;
+import org.bitcoinj.core.Transaction;
+import org.bitcoinj.core.TransactionBroadcast;
+import org.bitcoinj.core.TransactionBroadcaster;
+import org.bitcoinj.crypto.ChildNumber;
 import org.bitcoinj.crypto.DeterministicKey;
 import org.bitcoinj.crypto.MnemonicCode;
 import org.bitcoinj.kits.WalletAppKit;
 import org.bitcoinj.script.Script;
+import org.bitcoinj.wallet.DeterministicKeyChain;
 import org.bitcoinj.wallet.DeterministicSeed;
 import org.bitcoinj.wallet.KeyChain;
 import org.bitcoinj.wallet.KeyChainGroup;
@@ -23,9 +34,12 @@ import org.bitcoinj.wallet.WalletProtobufSerializer;
 import org.bitcoinj.wallet.WalletTransaction;
 
 import java.io.File;
+import java.math.BigInteger;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
 public class ConnectorP2P {
@@ -46,27 +60,17 @@ public class ConnectorP2P {
     }
 
     public float getBalance(){
-        this.BtcWallet.addWatchedAddress(Address.fromString(CURRENT_NETWORK, getAddress()));
-        long satoshis = this.BtcWallet.getBalance().value;
+        Coin satoshis = this.BtcWallet.getBalance();
+        Coin b2 = this.BtcWallet.getBalance(Wallet.BalanceType.AVAILABLE);
+        Coin b3 = this.BtcWallet.getBalance(Wallet.BalanceType.AVAILABLE_SPENDABLE);
+        Coin b4 = this.BtcWallet.getBalance(Wallet.BalanceType.ESTIMATED);
+        Coin b5 = this.BtcWallet.getBalance(Wallet.BalanceType.ESTIMATED_SPENDABLE);
 
-        long b2 = this.BtcWallet.getBalance(Wallet.BalanceType.AVAILABLE).getValue();
-        long b3 = this.BtcWallet.getBalance(Wallet.BalanceType.AVAILABLE_SPENDABLE).getValue();
-        long b4 = this.BtcWallet.getBalance(Wallet.BalanceType.ESTIMATED).getValue();
-        long b5 = this.BtcWallet.getBalance(Wallet.BalanceType.ESTIMATED_SPENDABLE).getValue();
-
-        return satoshisToBitcoin(satoshis);
+        return 0;
     }
 
     public String getAddress(){
-        String a1 = this.BtcWallet.currentReceiveAddress().toString();
-        String a2 = this.BtcWallet.currentChangeAddress().toString();
-        String a3 = this.BtcWallet.freshReceiveAddress().toString();
-        String a4 = this.BtcWallet.currentAddress(KeyChain.KeyPurpose.RECEIVE_FUNDS).toString();
-
-        List<Address> issued = this.BtcWallet.getIssuedReceiveAddresses();
-        List<Address> watch = this.BtcWallet.getWatchedAddresses();
-
-        return this.BtcWallet.currentAddress(KeyChain.KeyPurpose.RECEIVE_FUNDS).toString();
+        return this.BtcWallet.currentReceiveAddress().toString();
     }
 
     public float getSuggestedGas(){
@@ -86,26 +90,31 @@ public class ConnectorP2P {
         });
     }
 
-    public boolean sendAmount(float btcAmount, String receiver){
-        Address address = Address.fromString(CURRENT_NETWORK, receiver);
-        Coin coin = Coin.valueOf(bitcoinToSatoshis(btcAmount));
-        SendRequest s = SendRequest.to(address, coin);
+    public void sendAmount(float btcAmount, String receiver) throws InsufficientMoneyException, ExecutionException, InterruptedException, Exception {
+        SettableFuture<Transaction> future = SettableFuture.create();
+        this.BtcWallet.setTransactionBroadcaster(new TransactionBroadcaster() {
+            @Override
+            public TransactionBroadcast broadcastTransaction(Transaction transaction) {
+                return TransactionBroadcast.createMockBroadcast(transaction, future);
+            }
+        });
 
-        try {
-            this.BtcWallet.sendCoins(s);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
+        Address dest = Address.fromString(CURRENT_NETWORK, receiver);
+        Transaction t = new Transaction(CURRENT_NETWORK);
+        t.addOutput(Coin.valueOf(bitcoinToSatoshis(btcAmount)), dest);
+        SendRequest request = SendRequest.forTx(t);
+        this.BtcWallet.sendCoins(request);
+
+        //this.BtcWallet.setTransactionBroadcaster(new TransactionBroadcast(t));
+        //Wallet.SendResult result = this.BtcWallet.sendCoins(request);
+        //Transaction endTransaction = result.broadcastComplete.get();
     }
 
     public ConnectorP2P(String BIP39) throws UnreadableWalletException {
         try{
-            DeterministicSeed seed = new DeterministicSeed(BIP39, null, "", 0L);
-
+            DeterministicSeed seed = new DeterministicSeed(BIP39, null, "", System.currentTimeMillis() / 1000l);
             seed.check();
-
-            this.BtcWallet = Wallet.fromSeed(CURRENT_NETWORK, seed, Script.ScriptType.P2PKH);
+            this.BtcWallet = Wallet.fromSeed(CURRENT_NETWORK, seed, Script.ScriptType.P2WPKH);
         }catch(Exception ex)
         {
             //logger.log(ex)

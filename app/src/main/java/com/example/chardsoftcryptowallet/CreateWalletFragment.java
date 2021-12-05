@@ -27,7 +27,7 @@ public class CreateWalletFragment extends Fragment {
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     private Wallet getWalletFromInputs(){
-        GeneratedBIP39 = BIP39.generatePassphrase(12);
+        GeneratedBIP39 = BIP39.generateMnemonic();
         AES256CBC aes = new AES256CBC(((TextView)this.MainView.findViewById(R.id.txtPassword)).getText().toString());
         String cipherBIP39 = aes.encrypt(GeneratedBIP39);
 

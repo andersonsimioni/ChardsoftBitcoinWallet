@@ -95,26 +95,6 @@ public class BIP39 {
         return mnemonic;
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
-    public static String generatePassphrase(int size){
-        String newPassPhrase = "";
-        boolean success=false;
-
-        while (success==false){
-            newPassPhrase = generateMnemonic();
-            try {
-                DeterministicSeed testSeed = new DeterministicSeed(newPassPhrase, null, "", 0L);
-                testSeed.check();
-                success = true;
-            } catch (Exception e) {
-                success = false;
-            }
-        }
-
-
-        return newPassPhrase;
-    }
-
     private static final String[] ENGLISH_WORD_LIST = {"abandon", "ability", "able", "about", "above",
             "absent", "absorb", "abstract", "absurd", "abuse", "access", "accident", "account", "accuse", "achieve",
             "acid", "acoustic", "acquire", "across", "act", "action", "actor", "actress", "actual", "adapt", "add",

@@ -1,5 +1,6 @@
 package com.example.chardsoftcryptowallet;
 
+import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
@@ -11,6 +12,10 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.example.chardsoftcryptowallet.core.SingletonWallet;
+
+import org.bitcoinj.core.InsufficientMoneyException;
+
+import java.util.concurrent.ExecutionException;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -36,7 +41,8 @@ public class SendFragment extends Fragment {
 
         float btcAmount = Float.parseFloat(txtBtcAmount);
 
-        if(SingletonWallet.getApp().getUserWalletBtcNetworkConnection().sendAmount(btcAmount, txtBtcToAddress)){
+        try {
+            SingletonWallet.getApp().getUserWalletBtcNetworkConnection().sendAmount(btcAmount, txtBtcToAddress);
             MessageBox msg = new MessageBox("Success", "Success to send btc amount", this.MainView, false);
             msg.showMessage(new Runnable() {
                 @Override
@@ -44,14 +50,20 @@ public class SendFragment extends Fragment {
                     MainActivity.Singleton.replaceToFragment(new MainWalletPageFragrament());
                 }
             });
-        }else{
-            MessageBox msg = new MessageBox("Error", "Some error occurred on send btc amount", this.MainView, false);
+        } catch (InsufficientMoneyException e) {
+            MessageBox msg = new MessageBox("Error", "Insufficient Money", this.MainView, false);
+            msg.showMessage();
+        } catch (ExecutionException e) {
+            MessageBox msg = new MessageBox("Error", "Unknown error", this.MainView, false);
+            msg.showMessage();
+        } catch (InterruptedException e) {
+            MessageBox msg = new MessageBox("Error", "Unknown error", this.MainView, false);
             msg.showMessage();
         }
-    }
-
-    private void readQrCode(){
-
+        catch (Exception e) {
+            MessageBox msg = new MessageBox("Error", "Unknown error", this.MainView, false);
+            msg.showMessage();
+        }
     }
 
     private void setMaxAmount(){
@@ -71,13 +83,6 @@ public class SendFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 send();
-            }
-        });
-
-        ((Button)this.MainView.findViewById(R.id.btnOpenCameraSend)).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                readQrCode();
             }
         });
 
